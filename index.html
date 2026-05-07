@@ -838,10 +838,10 @@
     return valid;
   }
 
-  // Submit handler — posts JSON to the configured endpoint
-  // CONFIGURE: replace FORM_ENDPOINT below with your form backend URL
-  // Options: HubSpot form embed, Formspree (https://formspree.io), custom API route
-  var FORM_ENDPOINT = 'CONFIGURE_FORM_ENDPOINT';
+  // Submit handler — posts JSON to the form backend
+  // Temporary: webhook.site endpoint captures all submissions with UTM data (expires 2026-05-14)
+  // TODO: replace with CRM endpoint (HubSpot/Pipedrive/Airtable) per SEA-17 CRM setup
+  var FORM_ENDPOINT = 'https://webhook.site/282f64bb-6559-4b2e-85eb-58efb0c716b9';
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
