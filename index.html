@@ -676,10 +676,11 @@
         <input type="hidden" name="utm_campaign" id="utm_campaign" />
         <input type="hidden" name="utm_content" id="utm_content" />
         <input type="hidden" name="utm_term" id="utm_term" />
-        <!-- Derived CRM field -->
+        <!-- Derived CRM fields -->
         <input type="hidden" name="lead_source" id="lead_source" />
         <input type="hidden" name="page_url" id="page_url" />
         <input type="hidden" name="referrer" id="referrer" />
+        <input type="hidden" name="experiment_id" id="experiment_id" />
 
         <div class="form-row">
           <div class="form-group">
@@ -765,6 +766,9 @@
   var referrerEl = document.getElementById('referrer');
   if (referrerEl) referrerEl.value = document.referrer;
 
+  var experimentIdEl = document.getElementById('experiment_id');
+  if (experimentIdEl) experimentIdEl.value = params.get('experiment_id') || '';
+
   // ── Analytics helpers ────────────────────────────────────────────────────────
   window.trackEvent = function (eventName, properties) {
     if (typeof gtag === 'function') {
@@ -838,10 +842,21 @@
     return valid;
   }
 
-  // Submit handler — posts JSON to the form backend
-  // Temporary: webhook.site endpoint captures all submissions with UTM data (expires 2026-05-14)
-  // TODO: replace with CRM endpoint (HubSpot/Pipedrive/Airtable) per SEA-17 CRM setup
-  var FORM_ENDPOINT = 'https://webhook.site/282f64bb-6559-4b2e-85eb-58efb0c716b9';
+  // ── Form endpoint configuration ───────────────────────────────────────────────
+  // BRIDGE: formsubmit.co relays all submissions (including UTMs) to ai.protagonist@gmail.com.
+  // Permanent — no expiry. Activate by clicking the link in the activation email sent to that address.
+  //
+  // TARGET CRM (HubSpot — replace bridge once account is created):
+  //   1. Create free HubSpot account at https://app.hubspot.com/signup/crm
+  //   2. Note your Portal ID from the URL: app.hubspot.com/contacts/{PORTAL_ID}
+  //   3. Go to Marketing → Forms → Create Form with these fields:
+  //        email, firstname, lastname, company, message (= qa_challenge),
+  //        utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+  //        lead_source, page_url, referrer, experiment_id
+  //   4. From the form's Embed tab, copy the Form GUID
+  //   5. Replace FORM_ENDPOINT below:
+  //        var FORM_ENDPOINT = 'https://api.hsforms.com/submissions/v3/integration/submit/{PORTAL_ID}/{FORM_GUID}';
+  var FORM_ENDPOINT = 'https://formsubmit.co/ajax/ai.protagonist@gmail.com';
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -858,6 +873,9 @@
     var data = {};
     new FormData(form).forEach(function (value, key) { data[key] = value; });
     data.submitted_at = new Date().toISOString();
+    // formsubmit.co bridge: email subject + reply-to (ignored by HubSpot endpoint)
+    data._subject = 'New Demo Request: ' + (data.company || 'unknown') + ' — ' + (data.email || '');
+    data._replyto = data.email || '';
 
     // If no endpoint configured yet, log to console and show success (dev mode)
     if (FORM_ENDPOINT === 'CONFIGURE_FORM_ENDPOINT') {
